@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time and Location Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #currentTime, #currentLocation, #elapsedTime {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 1em;
+        }
+        #logEntries {
+            margin-top: 20px;
+            text-align: left;
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Time and Location Tracker</h1>
+    <div id="currentTime"></div>
+    <div id="currentLocation">Current Location: None</div>
+    <div id="elapsedTime">Elapsed Time: 00:00:00</div>
+    <div>
+        <button onclick="changeLocation('street')">Street</button>
+        <button onclick="changeLocation('market')">Market</button>
+        <button onclick="changeLocation('public transport')">Public Transport</button>
+        <button onclick="changeLocation('park')">Park</button>
+        <button onclick="changeLocation('home')">Home</button>
+        <button onclick="changeLocation('office')">Office</button>
+        <button onclick="changeLocation('restaurant')">Restaurant</button>
+        <button onclick="changeLocation('supermarket')">Supermarket</button>
+    </div>
+    <div>
+        <button onclick="downloadCSV()">Download Logs (CSV)</button>
+    </div>
+    <h2>Log Entries</h2>
+    <div id="logEntries"></div>
+
+    <script>
+        let currentLocation = null;
+        let startTime = null;
+        let timerInterval = null;
+        let logs = [];
+
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = `Current Time (UTC): ${now.toUTCString()}`;
+        }
+
+        function changeLocation(newLocation) {
+            const now = new Date();
+            if (currentLocation) {
+                clearInterval(timerInterval);
+                logs.push({
+                    location: currentLocation,
+                    date: now.toISOString().split('T')[0],
+                    timeStarted: startTime.toISOString(),
+                    timeEnded: now.toISOString()
+                });
+                updateLogEntries();
+            }
+            currentLocation = newLocation;
+            startTime = now;
+            document.getElementById('currentLocation').textContent = `Current Location: ${currentLocation}`;
+            document.getElementById('elapsedTime').textContent = 'Elapsed Time: 00:00:00';
+            timerInterval = setInterval(updateElapsedTime, 1000);
+        }
+
+        function updateElapsedTime() {
+            const now = new Date();
+            const elapsedTime = now - startTime;
+            const hours = Math.floor(elapsedTime / 3600000);
+            const minutes = Math.floor((elapsedTime % 3600000) / 60000);
+            const seconds = Math.floor((elapsedTime % 60000) / 1000);
+            document.getElementById('elapsedTime').textContent = `Elapsed Time: ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function updateLogEntries() {
+            const logEntriesDiv = document.getElementById('logEntries');
+            logEntriesDiv.innerHTML = logs.map(log => 
+                `<p>${log.location}: ${log.date} ${log.timeStarted.split('T')[1].split('.')[0]} - ${log.timeEnded.split('T')[1].split('.')[0]}</p>`
+            ).join('');
+            logEntriesDiv.scrollTop = logEntriesDiv.scrollHeight;
+        }
+
+        function downloadCSV() {
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Location,Date,Time Started,Time Ended\n"
+                + logs.map(log => 
+                    `${log.location},${log.date},${log.timeStarted},${log.timeEnded}`
+                ).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "location_logs.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
+    </script>
+</body>
+</html>
