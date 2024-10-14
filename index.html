@@ -107,9 +107,41 @@
 
     <script>
         let currentLocation = 'none';
-        let startTime = new Date();
+        let startTime;
         let timerInterval = null;
         let logs = [];
+
+        // Load data from local storage
+        function loadFromLocalStorage() {
+            const storedLogs = localStorage.getItem('locationLogs');
+            if (storedLogs) {
+                logs = JSON.parse(storedLogs);
+            }
+
+            const storedLocation = localStorage.getItem('currentLocation');
+            if (storedLocation) {
+                currentLocation = storedLocation;
+                document.getElementById('currentLocation').textContent = `Current Location: ${currentLocation}`;
+                document.querySelector(`button[onclick="changeLocation('${currentLocation}')"]`).classList.add('active');
+            }
+
+            const storedStartTime = localStorage.getItem('startTime');
+            if (storedStartTime) {
+                startTime = new Date(storedStartTime);
+                timerInterval = setInterval(updateElapsedTime, 1000);
+            } else {
+                startTime = new Date();
+            }
+
+            updateLogEntries();
+        }
+
+        // Save data to local storage
+        function saveToLocalStorage() {
+            localStorage.setItem('locationLogs', JSON.stringify(logs));
+            localStorage.setItem('currentLocation', currentLocation);
+            localStorage.setItem('startTime', startTime.toISOString());
+        }
 
         function updateCurrentTime() {
             const now = new Date();
@@ -137,6 +169,8 @@
                 // Update active button
                 document.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
                 document.querySelector(`button[onclick="changeLocation('${newLocation}')"]`).classList.add('active');
+
+                saveToLocalStorage();
             }
         }
 
@@ -159,6 +193,7 @@
                 timeEnded: coughEndTime.toISOString()
             });
             updateLogEntries();
+            saveToLocalStorage();
         }
 
         function updateLogEntries() {
@@ -185,9 +220,13 @@
             document.body.removeChild(link);
         }
 
+        // Initialize the app
+        loadFromLocalStorage();
         setInterval(updateCurrentTime, 1000);
         updateCurrentTime();
-        document.getElementById('noneButton').classList.add('active');
+
+        // Save data before the page is unloaded
+        window.addEventListener('beforeunload', saveToLocalStorage);
     </script>
 </body>
 </html>
